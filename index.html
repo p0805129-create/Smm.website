@@ -3,22 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل فروش ممبر و ویو</title>
+    <title>پنل فروش ممبر و ویو تلگرام</title>
     <style>
-        body { font-family: Tahoma, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        h2 { color: #333; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
-        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-family: inherit; transition: 0.3s; }
+        body { font-family: Tahoma, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 90%; max-width: 400px; text-align: center; margin: 20px 0; }
+        h2 { color: #1a1a1a; margin-bottom: 20px; font-size: 22px; }
+        
+        .payment-info { background: #fff8e1; padding: 15px; border-radius: 10px; margin-bottom: 25px; font-size: 13px; color: #8d6e63; border: 1px solid #ffe082; text-align: right; line-height: 1.8; }
+        .payment-info b { color: #d84315; }
+        .payment-info span { color: #1565c0; direction: ltr; display: inline-block; }
+        
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #e0e0e0; border-radius: 10px; box-sizing: border-box; font-family: inherit; font-size: 14px; transition: 0.3s; background-color: #fafafa; }
+        input:focus { border-color: #007bff; outline: none; background-color: white; }
+        
+        button { width: 100%; padding: 15px; background-color: #007bff; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; transition: 0.3s; margin-top: 10px; }
         button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #90caf9; cursor: not-allowed; }
+        
+        #status { margin-top: 20px; font-size: 14px; font-weight: bold; line-height: 1.6; padding: 10px; border-radius: 8px; }
+        .success { color: #2e7d32; background-color: #e8f5e9; }
+        .error { color: #c62828; background-color: #ffebee; }
+        .loading { color: #1565c0; background-color: #e3f2fd; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>پنل فروش ممبر و ویو</h2>
-        <input type="text" id="link" placeholder="لینک پست یا کانال تلگرام">
-        <input type="number" id="quantity" placeholder="تعداد درخواستی (مثلاً 1000)">
-        <button onclick="alert('سایت ما با موفقیت کار می‌کند! مرحله بعد اتصال به API است.')">ثبت سفارش</button>
+        <h2>پنل فروش ممبر تلگرام</h2>
+        
+        <div class="payment-info">
+            <p>⚠️ <b>توجه:</b> پرداخت به صورت کارت به کارت می‌باشد.</p>
+            <p>شماره کارت: <b><span>6037-XXXX-XXXX-XXXX</span></b></p>
+            <p>پس از ثبت سفارش، رسید را به آیدی تلگرام <b><span>@YourTelegramID</span></b> ارسال کنید.</p>
+        </div>
+
+        <input type="text" id="link" placeholder="لینک کانال تلگرام (مثلاً https://t.me/yourchannel)">
+        <input type="number" id="quantity" placeholder="تعداد ممبر درخواستی (مثلاً 1000)">
+        
+        <button id="submitBtn" onclick="submitOrder()">ثبت سفارش</button>
+        
+        <div id="status"></div>
     </div>
+
+    <script>
+        async function submitOrder() {
+            const link = document.getElementById('link').value;
+            const quantity = document.getElementById('quantity').value;
+            const statusDiv = document.getElementById('status');
+            const btn = document.getElementById('submitBtn');
+
+            if (!link || !quantity) {
+                statusDiv.className = "error";
+                statusDiv.innerText = "لطفاً لینک کانال و تعداد را وارد کنید.";
+                return;
+            }
+
+            // تغییر وضعیت دکمه و نمایش پیام انتظار
+            btn.disabled = true;
+            btn.innerText = "در حال ارتباط با سرور...";
+            statusDiv.className = "loading";
+            statusDiv.innerText = "لطفاً صبر کنید...";
+
+            try {
+                // آدرس جدید Worker شما
+                const response = await fetch('https://worker-js2.p0805129.workers.dev', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ link: link, quantity: quantity })
+                });
+
+                const data = await response.json();
+                
+                // بررسی پاسخ سرور (پنل 7panel)
+                if (data.order) {
+                    statusDiv.className = "success";
+                    statusDiv.innerHTML = `سفارش شما با موفقیت ثبت شد!<br>کد پیگیری: ${data.order}`;
+                    document.getElementById('link').value = '';
+                    document.getElementById('quantity').value = '';
+                } else if (data.error) {
+                    // اگر پنل خطا داد (مثلاً موجودی کم بود)
+                    statusDiv.className = "error";
+                    statusDiv.innerHTML = `خطا: ${data.error}`;
+                } else {
+                    statusDiv.className = "error";
+                    statusDiv.innerText = "پاسخ نامعتبر از سرور.";
+                }
+            } catch (error) {
+                statusDiv.className = "error";
+                statusDiv.innerText = "خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.";
+            } finally {
+                // برگرداندن دکمه به حالت اول
+                btn.disabled = false;
+                btn.innerText = "ثبت سفارش";
+            }
+        }
+    </script>
 </body>
 </html>
